@@ -24,20 +24,23 @@ class SendEmail():
 
 
     def send(self, to=None, subject= None, message = None):
-        # Check if the minimum interval has passed
-        current_time = time.time()
-        if current_time - self.last_email_time < self.min_interval:
-            return
-        self.last_email_time = current_time
+        try:
+            # Check if the minimum interval has passed
+            current_time = time.time()
+            if current_time - self.last_email_time < self.min_interval:
+                return
+            self.last_email_time = current_time
 
-        msg = MIMEMultipart()
-        msg['From'] = self.email
-        msg['To'] = self.email
-        msg['Subject'] = self.subject
-        msg.attach(MIMEText(self.message, 'plain'))
-        self.server.send_message(msg)
-        print("Email alert sent!")  # Print a message to the console
-        del msg
+            msg = MIMEMultipart()
+            msg['From'] = self.email
+            msg['To'] = self.email
+            msg['Subject'] = self.subject
+            msg.attach(MIMEText(self.message, 'plain'))
+            self.server.send_message(msg)
+            print("Email alert sent!")  # Print a message to the console
+            del msg
+        except Exception as e:
+            print(f"Error: {e}")
 
     def __del__(self):
         self.server.quit()
