@@ -31,6 +31,9 @@ class SendEmail():
                 return
             self.last_email_time = current_time
 
+            self.server = smtplib.SMTP('smtp.gmail.com', 587)
+            self.server.starttls()
+            self.server.login(self.email, self.password)
             msg = MIMEMultipart()
             msg['From'] = self.email
             msg['To'] = self.email
