@@ -36,6 +36,7 @@ class SendEmail():
         msg['Subject'] = self.subject
         msg.attach(MIMEText(self.message, 'plain'))
         self.server.send_message(msg)
+        print("Email alert sent!")  # Print a message to the console
         del msg
 
     def __del__(self):
