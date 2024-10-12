@@ -2,7 +2,7 @@ import cv2
 from ultralytics import YOLO
 
 # Load YOLOv8 Nano model
-model = YOLO("yolov8n.pt")  
+model = YOLO("yolo_squirrel.pt")  
 
 # Open the camera feed (0 is the default camera)
 cap = cv2.VideoCapture(0)
