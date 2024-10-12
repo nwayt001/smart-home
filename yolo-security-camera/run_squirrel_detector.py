@@ -2,6 +2,45 @@ import cv2
 from ultralytics import YOLO
 import os
 import argparse
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import time
+
+
+class SendEmail():
+    def __init__(self):
+        self.email = 'nick.waytowich2@gmail.com'
+        self.password = 'udwu lize vcvf oauc'
+        self.server = smtplib.SMTP('smtp.gmail.com', 587)
+        self.server.starttls()
+        self.server.login(self.email, self.password)
+
+        self.subject =  "Squirrel Alert: Squirrel Detected!"
+        self.message = "Alert! A squirrel has been detected on your porch."
+
+        self.last_email_time = 0
+        self.min_interval = 45  # Minimum interval between emails (in seconds)
+
+
+    def send(self, to=None, subject= None, message = None):
+        # Check if the minimum interval has passed
+        current_time = time.time()
+        if current_time - self.last_email_time < self.min_interval:
+            return
+        self.last_email_time = current_time
+
+        msg = MIMEMultipart()
+        msg['From'] = self.email
+        msg['To'] = self.email
+        msg['Subject'] = self.subject
+        msg.attach(MIMEText(self.message, 'plain'))
+        self.server.send_message(msg)
+        del msg
+
+    def __del__(self):
+        self.server.quit()
+
 
 class SquirrelDecetor():
     def __init__(self, model_path='yolo_squirrel.pt', visualize=None):
@@ -18,6 +57,9 @@ class SquirrelDecetor():
         if visualize is not None:
             self.visualize = visualize
         
+        # Setup email alert
+        self.email = SendEmail()
+
     # Check if the device is a Raspberry Pi by inspecting the hardware info
     def is_raspberry_pi(self):
         try:
@@ -72,6 +114,7 @@ class SquirrelDecetor():
                 if int(r.cls) == 0:
                     print("Squirrel detected!")
                     print('\a')  # Plays a simple beep sound (on some systems)
+                    self.email.send() # Send an email alert
 
 
             # Draw bounding boxes on the detected objects and visualize the frame
