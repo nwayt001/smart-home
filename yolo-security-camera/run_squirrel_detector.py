@@ -24,6 +24,8 @@ class SquirrelDecetor():
             with open('/proc/cpuinfo', 'r') as f:
                 cpuinfo = f.read().lower()
                 if 'raspberry pi' in cpuinfo or 'bcm' in cpuinfo:
+                    import sys
+                    sys.path.append('/usr/lib/python3/dist-packages')
                     print("Running on a Raspberry Pi")
                     self.visualize = False  # don't visualize stream on the pi
                     return True
