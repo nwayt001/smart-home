@@ -1,6 +1,7 @@
 import cv2
 from ultralytics import YOLO
 import os
+import argparse
 
 class SquirrelDecetor():
     def __init__(self, model_path='yolo_squirrel.pt', visualize=None):
@@ -86,5 +87,17 @@ class SquirrelDecetor():
 
 
 if __name__ == '__main__':
-    detector = SquirrelDecetor()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str, default='yolo_squirrel.pt', help='Path to the YOLO model')
+    parser.add_argument('--visualize', action='store_true', help='Visualize the stream')    
+
+    args = parser.parse_args()
+    
+    visualize = None
+    if args.visualize:
+        print("Visualizing the stream")
+        visualize = True
+
+    # Run the squirrel detector
+    detector = SquirrelDecetor(visualize=visualize)
     detector.run()
