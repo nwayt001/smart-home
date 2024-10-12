@@ -1,49 +1,90 @@
 import cv2
 from ultralytics import YOLO
+import os
 
-# Load YOLOv8 Nano model
-model = YOLO("yolo_squirrel.pt")  
+class SquirrelDecetor():
+    def __init__(self, model_path='yolo_squirrel.pt', visualize=None):
 
-# Open the camera feed (0 is the default camera)
-cap = cv2.VideoCapture(0)
+        # load yolo model
+        self.model = YOLO(model_path, verbose=False)
 
-# Check if the camera opened successfully
-if not cap.isOpened():
-    print("Error: Could not open camera.")
-    exit()
+        # check if the device is a Raspberry Pi
+        self.RASPI = self.is_raspberry_pi()
 
-while True:
-    # Read frame from the camera
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to grab frame.")
-        break
+        # initialize the camera (depdending on the device)
+        self.init_camera()
 
-    # Run YOLOv8 on the current frame
-    results = model(frame)
+        if visualize is not None:
+            self.visualize = visualize
+        
+    # Check if the device is a Raspberry Pi by inspecting the hardware info
+    def is_raspberry_pi(self):
+        try:
+            with open('/proc/cpuinfo', 'r') as f:
+                cpuinfo = f.read().lower()
+                if 'raspberry pi' in cpuinfo or 'bcm' in cpuinfo:
+                    print("Running on a Raspberry Pi")
+                    self.visualize = False  # don't visualize stream on the pi
+                    return True
+        except FileNotFoundError:
+            pass
+        print("Running on a standard Linux desktop")
+        self.visualize = True # visualize stream on the desktop
+        return False
 
-    # Draw bounding boxes on the detected objects
-    annotated_frame = results[0].plot()
+    # Initialize the camera
+    def init_camera(self):
+        # check if the device is a Raspberry Pi
+        if self.RASPI:
+            from picamera2 import Picamera2
+            self.camera = Picamera2()
+            self.camera.configure(self.camera.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)}))
+            self.camera.start()
+        else:
+            self.camera = cv2.VideoCapture(0)
+            if not self.camera.isOpened():
+                print("Error: Could not open camera.")
+                exit()
 
-    # Check if a squirrel is detected (replace 'squirrel' with the appropriate class name if needed)
-    for r in results[0].boxes:
-        # Assuming 'squirrel' is the label assigned during training
-        if r.cls == 'squirrel':
-            print("Squirrel detected!")
-            # Here, you can add your custom action, for example:
-            # - Sound an alarm
-            # - Send a notification
-            # - Trigger a deterrent device, etc.
-            # Example: Sound a beep
-            print('\a')  # Plays a simple beep sound (on some systems)
 
-    # Display the frame with detections
-    cv2.imshow('YOLO Squirrel Detection', annotated_frame)
+    def get_frame(self):
+        if self.RASPI:
+            return self.camera.capture_array()
+        else:
+            ret, frame = self.camera.read()
+            return frame
+        
 
-    # Press 'q' to exit the loop
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    def run(self):
+        while True:
 
-# Release the capture and close windows
-cap.release()
-cv2.destroyAllWindows()
+            # Read frame from the camera
+            frame = self.get_frame()
+
+            # Run YOLOv8 on the current frame
+            results = self.model(frame, verbose=False)
+
+            # Check if a squirrel is detected 
+            for r in results[0].boxes:
+                if int(r.cls) == 0:
+                    print("Squirrel detected!")
+                    print('\a')  # Plays a simple beep sound (on some systems)
+
+
+            # Draw bounding boxes on the detected objects and visualize the frame
+            if self.visualize:
+                annotated_frame = results[0].plot()
+                cv2.imshow('YOLO Squirrel Detection', annotated_frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    def __del__(self):
+        self.camera.release()
+        cv2.destroyAllWindows()
+
+
+
+if __name__ == '__main__':
+    detector = SquirrelDecetor()
+    detector.run()
