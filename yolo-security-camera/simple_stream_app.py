@@ -1,6 +1,7 @@
 from flask import Flask, Response, render_template
 import cv2
 import threading
+import sys
 
 app = Flask(__name__)
 
@@ -19,6 +20,7 @@ def is_raspberry_pi():
 # Initialize the camera
 if is_raspberry_pi():
     from picamera2 import Picamera2
+    sys.path.append('/usr/lib/python3/dist-packages')
     camera = Picamera2()
     camera.configure(camera.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)}))
     camera.start()
