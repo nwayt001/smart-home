@@ -5,6 +5,7 @@ import argparse
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 import time
 
 
@@ -23,7 +24,7 @@ class SendEmail():
         self.min_interval = 45  # Minimum interval between emails (in seconds)
 
 
-    def send(self, to=None, subject= None, message = None):
+    def send(self, image = None):
         try:
             # Check if the minimum interval has passed
             current_time = time.time()
@@ -39,6 +40,14 @@ class SendEmail():
             msg['To'] = self.email
             msg['Subject'] = self.subject
             msg.attach(MIMEText(self.message, 'plain'))
+
+            # attach image
+            # Attach the image
+            if image is not None:
+                image_bytes = cv2.imencode('.jpg', image)[1].tobytes()
+                image_mime = MIMEImage(image_bytes, name="squirrel_detected.jpg")
+                msg.attach(image_mime)
+
             self.server.send_message(msg)
             print("Email alert sent!")  # Print a message to the console
             del msg
@@ -50,7 +59,7 @@ class SendEmail():
 
 
 class SquirrelDecetor():
-    def __init__(self, model_path='yolo_squirrel.pt', visualize=None):
+    def __init__(self, model_path='yolo_squirrel.pt', visualize=None, confidence_threshold=0.5):    
 
         # load yolo model
         self.model = YOLO(model_path, verbose=False)
@@ -66,6 +75,9 @@ class SquirrelDecetor():
         
         # Setup email alert
         self.email = SendEmail()
+
+        # Confidence threshold for detection
+        self.confidence_threshold = confidence_threshold
 
     # Check if the device is a Raspberry Pi by inspecting the hardware info
     def is_raspberry_pi(self):
@@ -118,10 +130,11 @@ class SquirrelDecetor():
 
             # Check if a squirrel is detected 
             for r in results[0].boxes:
-                if int(r.cls) == 0:
+                if int(r.cls) == 0 and r.conf.item() > self.confidence_threshold:
                     print("Squirrel detected!")
                     print('\a')  # Plays a simple beep sound (on some systems)
-                    self.email.send() # Send an email alert
+                    annotated_frame = results[0].plot()
+                    self.email.send(image = annotated_frame) # Send an email alert
 
 
             # Draw bounding boxes on the detected objects and visualize the frame
@@ -142,6 +155,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='yolo_squirrel.pt', help='Path to the YOLO model')
     parser.add_argument('--visualize', action='store_true', help='Visualize the stream')    
+    parser.add_argument('--confidence', type=float, default=0.7, help='Confidence threshold for detection')
 
     args = parser.parse_args()
     
@@ -151,5 +165,5 @@ if __name__ == '__main__':
         visualize = True
 
     # Run the squirrel detector
-    detector = SquirrelDecetor(visualize=visualize)
+    detector = SquirrelDecetor(visualize=visualize, confidence_threshold=args.confidence)
     detector.run()
