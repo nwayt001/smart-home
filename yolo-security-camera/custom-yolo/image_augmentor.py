@@ -7,8 +7,8 @@ from albumentations.pytorch import ToTensorV2
 # Directories for original and augmented datasets
 input_images_dir = 'squirrel_dataset/images/train'
 input_labels_dir = 'squirrel_dataset/labels/train'
-output_images_dir = 'augmented_dataset/images/train'
-output_labels_dir = 'augmented_dataset/labels/train'
+output_images_dir = 'squirrel_dataset/images/train'
+output_labels_dir = 'squirrel_dataset/labels/train'
 
 # Make sure output directories exist
 os.makedirs(output_images_dir, exist_ok=True)
